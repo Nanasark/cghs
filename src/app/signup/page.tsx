@@ -5,42 +5,61 @@ import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import BusinessDetailsForm from "@/components/signup/business-details-form"
-import ContactInformationForm from "@/components/signup/contact-information-form"
-import PasswordForm from "@/components/signup/password-form"
-import StepIndicator from "@/components/signup/step-indicator"
-import { useRouter } from "next/navigation"
+import AuthorisedRepresentativeForm from "@/components/signup/authorised-representative-form"
+import ControllersForm from "@/components/signup/controllers-form"
+import BusinessDocumentsForm from "@/components/signup/business-documents-form"
 
-export default function SignupPage() {
+const steps = ["Business Details", "Authorised Representative", "Controllers", "Business Documents"]
+
+export default function KYBPage() {
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({
+    // Business Details
     businessName: "",
-    isRegistered: false,
-    contactName: "",
-    email: "",
-    password: "",
+    addressLine1: "",
+    addressLine2: "",
+    cityRegion: "",
+    state: "",
+    country: "",
+    jurisdiction: "",
+    phoneNumber: "",
+    socialLinks: {
+      linkedin: "",
+      twitter: "",
+      facebook: "",
+    },
+
+    // Authorised Representative
+    representativeId: null as File | null,
+    representativeAddress: null as File | null,
+
+    // Controllers
+    controllers: [] as Array<{
+      type: string
+      id: File | null
+      address: File | null
+    }>,
+
+    // Business Documents
+    incorporation: null as File | null,
+    articles: null as File | null,
+    shareholders: null as File | null,
+    directors: null as File | null,
+    orgChart: null as File | null,
+    incumbency: null as File | null,
   })
-  const totalSteps = 3
-  const router = useRouter()
 
   const handleNext = (data: Partial<typeof formData>) => {
     setFormData((prev) => ({ ...prev, ...data }))
-    setStep((prev) => Math.min(prev + 1, totalSteps))
+    setStep((prev) => Math.min(prev + 1, steps.length))
   }
 
   const handleBack = () => {
     setStep((prev) => Math.max(prev - 1, 1))
   }
 
-  const handleSubmit = async (password: string) => {
-    const finalData = { ...formData, password }
-    // Here you would typically send the data to your API
-    console.log("Submitting:", finalData)
-    // Redirect to login page after successful submission
-    router.push("/login")
-  }
-
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <div className="mb-8">
         <Image src="/logo.svg" alt="cGHS Logo" width={48} height={48} className="w-12 h-12" />
       </div>
@@ -48,45 +67,52 @@ export default function SignupPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-white rounded-lg shadow-xl p-6 space-y-6"
+        className="w-full max-w-md bg-white rounded-lg shadow-md p-6"
       >
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Create your cGHS account</h1>
-          <p className="text-gray-600">
-            {step === 1 && "Enter your business details"}
-            {step === 2 &&
-              "Please fill out the fields below on behalf of the authorized representative for your company."}
-            {step === 3 && "Choose a password"}
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900">Create your cGHS account</h1>
+          <p className="mt-2 text-sm text-gray-600">
+            Please fill out the fields below on behalf of the authorized representative for your company.
           </p>
         </div>
 
-        <StepIndicator currentStep={step} totalSteps={totalSteps} />
-
-        <div className="mt-8">
-          {step === 1 && <BusinessDetailsForm initialData={formData} onNext={handleNext} />}
-          {step === 2 && <ContactInformationForm initialData={formData} onNext={handleNext} onBack={handleBack} />}
-          {step === 3 && <PasswordForm onSubmit={handleSubmit} onBack={handleBack} />}
+        {/* Progress indicator */}
+        <div className="mb-8 relative">
+          <div className="h-1 w-full bg-gray-200 rounded">
+            <div
+              className="h-1 bg-emerald-500 rounded transition-all duration-300"
+              style={{ width: `${(step / steps.length) * 100}%` }}
+            />
+          </div>
+          <div className="mt-2 text-xs text-gray-500 text-center">
+            Step {step} of {steps.length}
+          </div>
         </div>
 
-        <div className="text-sm text-center space-y-4">
-          <p className="text-gray-600">By creating an account, you acknowledge you agree to our</p>
-          <div className="space-x-2 text-emerald-600">
-            <Link href="/privacy" className="hover:text-emerald-700">
+        {step === 1 && <BusinessDetailsForm initialData={formData} onNext={handleNext} />}
+        {step === 2 && <AuthorisedRepresentativeForm initialData={formData} onNext={handleNext} onBack={handleBack} />}
+        {step === 3 && <ControllersForm initialData={formData} onNext={handleNext} onBack={handleBack} />}
+        {step === 4 && <BusinessDocumentsForm initialData={formData} onBack={handleBack} />}
+
+        <div className="mt-6 text-center text-sm text-gray-600">
+          By creating an account, you acknowledge you agree to our
+          <div className="flex justify-center space-x-2 mt-1">
+            <Link href="/privacy" className="text-emerald-600 hover:text-emerald-700">
               Privacy Policy
             </Link>
             <span>|</span>
-            <Link href="/aml" className="hover:text-emerald-700">
+            <Link href="/aml" className="text-emerald-600 hover:text-emerald-700">
               AML Policy
             </Link>
             <span>|</span>
-            <Link href="/terms" className="hover:text-emerald-700">
+            <Link href="/terms" className="text-emerald-600 hover:text-emerald-700">
               Terms of Use
             </Link>
           </div>
         </div>
       </motion.div>
 
-      <div className="mt-8 text-gray-600">
+      <div className="mt-6 text-sm text-gray-600">
         Already have an account?{" "}
         <Link href="/login" className="text-emerald-600 hover:text-emerald-700">
           Log in
