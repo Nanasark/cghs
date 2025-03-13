@@ -17,11 +17,10 @@ export default function LoginPage() {
     password: "",
   })
   const [showPassword, setShowPassword] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  // const [errors, setErrors] = useState<Record<string, string>>({})
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Add your login logic here
     console.log("Login attempt:", formData)
   }
 
@@ -89,7 +88,7 @@ export default function LoginPage() {
       </motion.div>
 
       <div className="mt-8 text-gray-600">
-        Don't have an account?{" "}
+        Don&apos;t have an account?{" "}
         <Link href="/signup" className="text-emerald-600 hover:text-emerald-700">
           Create account
         </Link>

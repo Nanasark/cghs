@@ -25,7 +25,7 @@ export default function HeroSection() {
           <div className="space-y-6">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
               cGHS Token
-              <span className="block text-emerald-600">Ghana's First Stablecoin</span>
+              <span className="block text-emerald-600">Ghana&apos;s First Stablecoin</span>
             </h1>
             <p className="text-lg md:text-xl text-gray-600 max-w-lg">
               A digital currency backed 1:1 by the Ghanaian Cedi, bringing financial inclusion and stability to West
