@@ -3,6 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
+import EmailLogin from "./login/withEmail"
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -32,12 +33,13 @@ export default function Header() {
             </Link>
           </nav>
           <div className="flex items-center">
-            <Link
+            {/* <Link
               href="/signup"
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
             >
               Get Started
-            </Link>
+            </Link> */}
+            <EmailLogin label={"Sign In"} />
             <button className="ml-4 md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"

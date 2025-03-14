@@ -7,6 +7,7 @@ import { motion } from "framer-motion"
 
 interface BusinessDetailsFormProps {
   initialData: {
+    businessId: string
     businessName: string
     addressLine1: string
     addressLine2: string

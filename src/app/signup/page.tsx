@@ -15,7 +15,8 @@ export default function KYBPage() {
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({
     // Business Details
-    businessName: "",
+    businessId: crypto.randomUUID(),
+     businessName: "",
     addressLine1: "",
     addressLine2: "",
     cityRegion: "",
@@ -50,7 +51,30 @@ export default function KYBPage() {
   })
 
   const handleNext = (data: Partial<typeof formData>) => {
-    setFormData((prev) => ({ ...prev, ...data }))
+    // Merge the new data with existing data, preserving all previous uploads
+    setFormData((prev) => {
+      // For controllers, we need special handling to ensure we don't lose any uploaded files
+      if (data.controllers) {
+        // Make sure we preserve any file uploads from previous controllers
+        const updatedControllers = data.controllers.map((newController, index) => {
+          const prevController = prev.controllers[index]
+          if (prevController) {
+            return {
+              ...newController,
+              // Preserve files if they weren't changed
+              id: newController.id || prevController.id,
+              address: newController.address || prevController.address,
+            }
+          }
+          return newController
+        })
+
+        return { ...prev, ...data, controllers: updatedControllers }
+      }
+
+      return { ...prev, ...data }
+    })
+
     setStep((prev) => Math.min(prev + 1, steps.length))
   }
 

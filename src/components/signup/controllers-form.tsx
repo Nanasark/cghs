@@ -89,6 +89,7 @@ export default function ControllersForm({ initialData, onNext, onBack }: Control
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
+      // Pass the controllers array to the parent component
       onNext({ controllers })
     }
   }

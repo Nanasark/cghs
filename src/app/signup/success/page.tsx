@@ -21,12 +21,18 @@ export default function KYBSuccessPage() {
           back to you within 2-3 business days.
         </p>
 
-        <div className="pt-4">
+        <div className=" flex gap-5 pt-4">
           <Link
             href="/"
             className="inline-flex justify-center rounded-md border border-transparent bg-emerald-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
           >
             Return to Home
+          </Link>
+           <Link
+            href="/dashboard"
+            className="inline-flex justify-center rounded-md border border-transparent bg-emerald-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+          >
+            Dashboard
           </Link>
         </div>
       </div>
