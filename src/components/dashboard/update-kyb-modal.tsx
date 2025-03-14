@@ -203,14 +203,17 @@ export default function UpdateKybModal({ isOpen, onClose, kybStatus, kybIssues =
                     <p className="text-xs text-gray-500">{field.description}</p>
 
                     <div className="relative">
-                      <input
-                        type="file"
-                        id={field.id}
-                        ref={(el) => (fileInputRefs.current[field.id] = el)}
-                        className="hidden"
-                        accept="image/*,.pdf"
-                        onChange={(e) => handleFileChange(field.id, e)}
-                      />
+                     <input
+  type="file"
+  id={field.id}
+  ref={(el) => {
+    fileInputRefs.current[field.id] = el;
+  }} // Ensure no return value
+  className="hidden"
+  accept="image/*,.pdf"
+  onChange={(e) => handleFileChange(field.id, e)}
+/>
+
                       <label
                         htmlFor={field.id}
                         className={`
