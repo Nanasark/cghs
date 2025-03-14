@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Search } from "lucide-react"
@@ -93,6 +93,7 @@ export default function KYBApplicationsPage() {
   })
 
   return (
+     <Suspense fallback={<div>Loading...</div>}>
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">KYB Applications</h1>
@@ -263,7 +264,9 @@ export default function KYBApplicationsPage() {
           </table>
         </div>
       </div>
-    </div>
+      </div>
+       </Suspense>
   )
+   
 }
 
