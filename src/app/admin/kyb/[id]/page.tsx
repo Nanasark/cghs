@@ -1,47 +1,108 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, CheckCircle, XCircle } from "lucide-react"
+import { ArrowLeft, CheckCircle, XCircle, Loader2 } from "lucide-react"
 
-// Mock data - in a real app, this would come from your API based on the ID
-const mockApplication = {
-  id: "APP123",
-  businessName: "Accra Fintech Ltd",
-  isRegistered: true,
-  contactName: "Kwame Mensah",
-  email: "kwame@accrafintech.com",
-  date: "2023-03-12",
-  status: "pending",
-  documents: [
-    { name: "Business Registration Certificate", url: "#" },
-    { name: "Tax Certificate", url: "#" },
-    { name: "Director's ID", url: "#" },
-  ],
+// Define the KYB application interface
+interface KYBDocument {
+  url: string
+  format: string
+  publicId: string
+  uploadedAt: string
+  resourceType: string
+  value?: string
 }
 
-export default function KYBApplicationDetailPage({ params }: { params: { id: string } }) {
+interface KYBApplication {
+  id: string
+  businessDetails: {
+    businessName: string
+    addressLine1: string
+    addressLine2?: string
+    cityRegion: string
+    state: string
+    country: string
+    jurisdiction: string
+    phoneNumber: string
+  }
+  documents: Record<string, KYBDocument>
+  status: "pending" | "approved" | "rejected"
+  feedback?: string
+  submittedAt: string
+  updatedAt?: string
+}
+
+// Properly type the page component props according to Next.js App Router
+export default function KYBApplicationDetailPage({
+  params,
+}: {
+  params: {
+    id: string
+  }
+}) {
   const router = useRouter()
-  const [application, setApplication] = useState(mockApplication)
+  const [application, setApplication] = useState<KYBApplication | null>(null)
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false)
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false)
   const [note, setNote] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch KYB application details from the server
+  useEffect(() => {
+    const fetchApplicationDetails = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        // const response = await fetch(`/api/admin/kyb-applications/${params.id}`)
+        // const response
+
+        // if (!response.ok) {
+        //   throw new Error(`Error fetching application: ${response.statusText}`)
+        // }
+
+        // const data = await response.json()
+        // setApplication(data)
+      } catch (err) {
+        console.error("Failed to fetch KYB application details:", err)
+        setError("Failed to load application details. Please try again.")
+        // Fallback to mock data in case of error
+        setApplication(mockApplication)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchApplicationDetails()
+  }, [params.id])
 
   const handleApprove = async () => {
+    if (!application) return
+
     setIsSubmitting(true)
 
     try {
-      // In a real app, you would make an API call here
-      console.log("Approving application", application.id, "with note:", note, params)
+      const response = await fetch(`/api/admin/kyb-applications/${application.id}/approve`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ feedback: note }),
+      })
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      if (!response.ok) {
+        throw new Error(`Error approving application: ${response.statusText}`)
+      }
 
       // Update local state
       setApplication({
         ...application,
         status: "approved",
+        feedback: note || undefined,
+        updatedAt: new Date().toISOString(),
       })
 
       // Close dialog
@@ -59,19 +120,29 @@ export default function KYBApplicationDetailPage({ params }: { params: { id: str
   }
 
   const handleReject = async () => {
+    if (!application) return
+
     setIsSubmitting(true)
 
     try {
-      // In a real app, you would make an API call here
-      console.log("Rejecting application", application.id, "with note:", note)
+      const response = await fetch(`/api/admin/kyb-applications/${application.id}/reject`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ feedback: note }),
+      })
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      if (!response.ok) {
+        throw new Error(`Error rejecting application: ${response.statusText}`)
+      }
 
       // Update local state
       setApplication({
         ...application,
         status: "rejected",
+        feedback: note,
+        updatedAt: new Date().toISOString(),
       })
 
       // Close dialog
@@ -86,6 +157,86 @@ export default function KYBApplicationDetailPage({ params }: { params: { id: str
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Mock data as fallback
+  const mockApplication: KYBApplication = {
+    id: params.id,
+    businessDetails: {
+      businessName: "Accra Fintech Ltd",
+      addressLine1: "123 Main Street",
+      addressLine2: "Suite 101",
+      cityRegion: "Accra",
+      state: "Greater Accra",
+      country: "Ghana",
+      jurisdiction: "Ghana",
+      phoneNumber: "+233 20 123 4567",
+    },
+    documents: {
+      incorporation: {
+        url: "#",
+        format: "pdf",
+        publicId: "mock-id",
+        uploadedAt: new Date().toISOString(),
+        resourceType: "image",
+      },
+      articles: {
+        url: "#",
+        format: "pdf",
+        publicId: "mock-id",
+        uploadedAt: new Date().toISOString(),
+        resourceType: "image",
+      },
+      representativeId: {
+        url: "#",
+        format: "pdf",
+        publicId: "mock-id",
+        uploadedAt: new Date().toISOString(),
+        resourceType: "image",
+      },
+    },
+    status: "pending",
+    submittedAt: new Date().toISOString(),
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <Loader2 className="h-8 w-8 text-emerald-500 animate-spin" />
+        <span className="ml-3 text-gray-600">Loading application details...</span>
+      </div>
+    )
+  }
+
+  if (error || !application) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-red-500 mb-4">{error || "Failed to load application details"}</p>
+        <button
+          onClick={() => router.back()}
+          className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 mr-4"
+        >
+          Go Back
+        </button>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
+        >
+          Try Again
+        </button>
+      </div>
+    )
+  }
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
   }
 
   return (
@@ -137,23 +288,31 @@ export default function KYBApplicationDetailPage({ params }: { params: { id: str
                 </div>
                 <div className="py-3 grid grid-cols-3 gap-4">
                   <dt className="text-sm font-medium text-gray-500">Business Name</dt>
-                  <dd className="text-sm text-gray-900 col-span-2">{application.businessName}</dd>
+                  <dd className="text-sm text-gray-900 col-span-2">{application.businessDetails.businessName}</dd>
                 </div>
                 <div className="py-3 grid grid-cols-3 gap-4">
-                  <dt className="text-sm font-medium text-gray-500">Registered Business</dt>
-                  <dd className="text-sm text-gray-900 col-span-2">{application.isRegistered ? "Yes" : "No"}</dd>
+                  <dt className="text-sm font-medium text-gray-500">Address</dt>
+                  <dd className="text-sm text-gray-900 col-span-2">
+                    {application.businessDetails.addressLine1}
+                    {application.businessDetails.addressLine2 && <br />}
+                    {application.businessDetails.addressLine2}
+                    <br />
+                    {application.businessDetails.cityRegion}, {application.businessDetails.state}
+                    <br />
+                    {application.businessDetails.country}
+                  </dd>
                 </div>
                 <div className="py-3 grid grid-cols-3 gap-4">
-                  <dt className="text-sm font-medium text-gray-500">Contact Person</dt>
-                  <dd className="text-sm text-gray-900 col-span-2">{application.contactName}</dd>
+                  <dt className="text-sm font-medium text-gray-500">Jurisdiction</dt>
+                  <dd className="text-sm text-gray-900 col-span-2">{application.businessDetails.jurisdiction}</dd>
                 </div>
                 <div className="py-3 grid grid-cols-3 gap-4">
-                  <dt className="text-sm font-medium text-gray-500">Email</dt>
-                  <dd className="text-sm text-gray-900 col-span-2">{application.email}</dd>
+                  <dt className="text-sm font-medium text-gray-500">Phone Number</dt>
+                  <dd className="text-sm text-gray-900 col-span-2">{application.businessDetails.phoneNumber}</dd>
                 </div>
                 <div className="py-3 grid grid-cols-3 gap-4">
                   <dt className="text-sm font-medium text-gray-500">Application Date</dt>
-                  <dd className="text-sm text-gray-900 col-span-2">{application.date}</dd>
+                  <dd className="text-sm text-gray-900 col-span-2">{formatDate(application.submittedAt)}</dd>
                 </div>
               </dl>
             </div>
@@ -166,19 +325,25 @@ export default function KYBApplicationDetailPage({ params }: { params: { id: str
             </div>
             <div className="px-4 py-5 sm:p-6">
               <ul className="divide-y divide-gray-200">
-                {application.documents.map((doc, index) => (
-                  <li key={index} className="py-3 flex justify-between items-center">
-                    <span className="text-sm text-gray-900">{doc.name}</span>
-                    <a
-                      href={doc.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      View Document
-                    </a>
-                  </li>
-                ))}
+                {Object.entries(application.documents).map(
+                  ([key, doc]) =>
+                    // Skip non-document entries (like controller types which are stored as values)
+                    doc.url && (
+                      <li key={key} className="py-3 flex justify-between items-center">
+                        <span className="text-sm text-gray-900">
+                          {key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                        </span>
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                        >
+                          View Document
+                        </a>
+                      </li>
+                    ),
+                )}
               </ul>
             </div>
           </div>
@@ -202,8 +367,17 @@ export default function KYBApplicationDetailPage({ params }: { params: { id: str
                 >
                   {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
                 </span>
-                <span className="text-sm text-gray-500">Last updated: {application.date}</span>
+                <span className="text-sm text-gray-500">
+                  Last updated: {formatDate(application.updatedAt || application.submittedAt)}
+                </span>
               </div>
+
+              {application.feedback && (
+                <div className="mt-4 p-3 bg-gray-50 rounded-md">
+                  <h4 className="text-sm font-medium text-gray-700">Feedback:</h4>
+                  <p className="mt-1 text-sm text-gray-600">{application.feedback}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -236,9 +410,22 @@ export default function KYBApplicationDetailPage({ params }: { params: { id: str
               {application.status !== "pending" && (
                 <button
                   className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                  onClick={() => {
-                    setApplication({ ...application, status: "pending" })
-                    alert("Application status reset to pending")
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(`/api/admin/kyb-applications/${application.id}/reset`, {
+                        method: "POST",
+                      })
+
+                      if (!response.ok) {
+                        throw new Error("Failed to reset status")
+                      }
+
+                      setApplication({ ...application, status: "pending", feedback: undefined })
+                      alert("Application status reset to pending")
+                    } catch (error) {
+                      console.error("Error resetting status:", error)
+                      alert("Failed to reset application status")
+                    }
                   }}
                 >
                   Reset Status
