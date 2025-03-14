@@ -3,7 +3,12 @@
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db'; // Your database connection
 
-export async function submitKybData(businessId: string, kybData: any, address:string) {
+interface KYBD{
+  status: unknown
+  documents:unknown
+}
+
+export async function submitKybData(businessId: string, kybData:KYBD, address:string) {
   try {
     // 1. Store the complete KYB data in your database
     // await db.kybApplications.upsert({
@@ -31,7 +36,7 @@ export async function submitKybData(businessId: string, kybData: any, address:st
   document_references: kybData.documents, // Stores only Cloudinary references
 };
     
-      const { data, error } = await db
+      const { error } = await db
         .from("kyb")
         .insert(metadata)
         .select()
@@ -44,8 +49,8 @@ export async function submitKybData(businessId: string, kybData: any, address:st
     // await sendKybSubmissionNotification(businessId);
     
     // 3. Revalidate relevant paths
-    // revalidatePath(`/dashboard`);
-    // revalidatePath(`/admin/kyb`);
+    revalidatePath(`/dashboard`);
+    revalidatePath(`/admin/kyb`);
     
     return { success: true };
   } catch (error) {

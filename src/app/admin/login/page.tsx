@@ -31,6 +31,7 @@ export default function AdminLoginPage() {
         setError("Invalid email or password")
       }
     } catch (err) {
+      console.log(err)
       setError("An error occurred. Please try again.")
     } finally {
       setIsLoading(false)

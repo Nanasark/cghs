@@ -33,7 +33,7 @@ export default function KYBApplicationDetailPage({ params }: { params: { id: str
 
     try {
       // In a real app, you would make an API call here
-      console.log("Approving application", application.id, "with note:", note)
+      console.log("Approving application", application.id, "with note:", note, params)
 
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
