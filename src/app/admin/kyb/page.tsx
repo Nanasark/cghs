@@ -1,9 +1,21 @@
 "use client"
 
-import { Suspense, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Search } from "lucide-react"
+
+import { Suspense } from "react";
+
+
+export default function KYBWrapper() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <KYBApplicationsPage />
+    </Suspense>
+  );
+}
+
 
 // Mock data - in a real app, this would come from your API
 const mockApplications = [
@@ -72,8 +84,7 @@ const mockApplications = [
     status: "pending",
   },
 ]
-
-export default function KYBApplicationsPage() {
+ function KYBApplicationsPage() {
   const searchParams = useSearchParams()
   const initialStatus = searchParams.get("status") || "all"
 
@@ -93,7 +104,6 @@ export default function KYBApplicationsPage() {
   })
 
   return (
-     <Suspense fallback={<div>Loading...</div>}>
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">KYB Applications</h1>
@@ -264,9 +274,8 @@ export default function KYBApplicationsPage() {
           </table>
         </div>
       </div>
-      </div>
-       </Suspense>
+    </div>
   )
-   
+  
 }
 
