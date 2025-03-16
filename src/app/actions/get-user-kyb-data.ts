@@ -1,12 +1,20 @@
 "use server"
 import { db } from "@/lib/db"
 
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export async function getUserKybData(walletAddress: string) {
   try {
+
+    await delay(500)
     if (!walletAddress) {
       throw new Error("Wallet address required")
     }
 
+
+    await walletAddress;
     // Normalize address to lowercase for consistency
 
 

@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { Search } from "lucide-react"
+import { Search, Loader2 } from "lucide-react"
 
 import { Suspense } from "react";
 
@@ -17,82 +17,54 @@ export default function KYBWrapper() {
 }
 
 
-// Mock data - in a real app, this would come from your API
-const mockApplications = [
-  {
-    id: "APP123",
-    businessName: "Accra Fintech Ltd",
-    contactName: "Kwame Mensah",
-    email: "kwame@accrafintech.com",
-    date: "2023-03-12",
-    status: "pending",
-  },
-  {
-    id: "APP122",
-    businessName: "Ghana Traders Co.",
-    contactName: "Ama Owusu",
-    email: "ama@ghanatraders.com",
-    date: "2023-03-11",
-    status: "approved",
-  },
-  {
-    id: "APP121",
-    businessName: "Kumasi Retail Group",
-    contactName: "Kofi Boateng",
-    email: "kofi@kumasiretail.com",
-    date: "2023-03-10",
-    status: "rejected",
-  },
-  {
-    id: "APP120",
-    businessName: "Tema Exports Inc.",
-    contactName: "Abena Mensah",
-    email: "abena@temaexports.com",
-    date: "2023-03-09",
-    status: "approved",
-  },
-  {
-    id: "APP119",
-    businessName: "Cape Coast Services",
-    contactName: "Yaw Darko",
-    email: "yaw@capecoastservices.com",
-    date: "2023-03-08",
-    status: "pending",
-  },
-  {
-    id: "APP118",
-    businessName: "Takoradi Shipping Ltd",
-    contactName: "Akua Asante",
-    email: "akua@takoradishipping.com",
-    date: "2023-03-07",
-    status: "approved",
-  },
-  {
-    id: "APP117",
-    businessName: "Ho Valley Tech",
-    contactName: "Kwesi Ampofo",
-    email: "kwesi@hovalleytech.com",
-    date: "2023-03-06",
-    status: "rejected",
-  },
-  {
-    id: "APP116",
-    businessName: "Tamale Agri Solutions",
-    contactName: "Gifty Adu",
-    email: "gifty@tamaleagri.com",
-    date: "2023-03-05",
-    status: "pending",
-  },
-]
- function KYBApplicationsPage() {
+interface KYBApplication {
+  id: string
+  businessName: string
+  contactName: string
+  email: string
+  date: string
+  status: "pending" | "approved" | "rejected"
+}
+
+function KYBApplicationsPage() {
   const searchParams = useSearchParams()
   const initialStatus = searchParams.get("status") || "all"
 
   const [statusFilter, setStatusFilter] = useState(initialStatus)
   const [searchQuery, setSearchQuery] = useState("")
   const [isSelectOpen, setIsSelectOpen] = useState(false)
+  const [applications, setApplications] = useState<KYBApplication[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const filteredApplications = mockApplications.filter((app) => {
+  // Fetch KYB applications from the server
+  useEffect(() => {
+    const fetchApplications = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const response = await fetch("/api/admin/kyb-applications")
+
+        if (!response.ok) {
+          throw new Error(`Error fetching applications: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        setApplications(data)
+      } catch (err) {
+        console.error("Failed to fetch KYB applications:", err)
+        setError("Failed to load applications. Please try again.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchApplications()
+  }, [])
+
+  // Filter applications based on status and search query
+  const filteredApplications = applications.filter((app) => {
     const matchesStatus = statusFilter === "all" || app.status === statusFilter
     const matchesSearch =
       app.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -177,105 +149,121 @@ const mockApplications = [
           </div>
         </div>
 
-        <div className="rounded-md border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Application ID
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Business Name
-                </th>
-                <th
-                  scope="col"
-                  className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Contact Person
-                </th>
-                <th
-                  scope="col"
-                  className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Email
-                </th>
-                <th
-                  scope="col"
-                  className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Date
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Status
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredApplications.length === 0 ? (
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 text-emerald-500 animate-spin" />
+            <span className="ml-3 text-gray-600">Loading applications...</span>
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-red-500">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : (
+          <div className="rounded-md border border-gray-200 overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <td colSpan={7} className="text-center py-6 text-gray-500">
-                    No applications found
-                  </td>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Application ID
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Business Name
+                  </th>
+                  <th
+                    scope="col"
+                    className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Contact Person
+                  </th>
+                  <th
+                    scope="col"
+                    className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Email
+                  </th>
+                  <th
+                    scope="col"
+                    className="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Date
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Status
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Actions
+                  </th>
                 </tr>
-              ) : (
-                filteredApplications.map((app) => (
-                  <tr key={app.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{app.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{app.businessName}</td>
-                    <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {app.contactName}
-                    </td>
-                    <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {app.email}
-                    </td>
-                    <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {app.date}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          app.status === "approved"
-                            ? "bg-green-100 text-green-800"
-                            : app.status === "rejected"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Link
-                        href={`/admin/kyb/${app.id}`}
-                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-                      >
-                        View
-                      </Link>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredApplications.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-6 text-gray-500">
+                      No applications found
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  filteredApplications.map((app) => (
+                    <tr key={app.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{app.id}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{app.businessName}</td>
+                      <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {app.contactName}
+                      </td>
+                      <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {app.email}
+                      </td>
+                      <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {app.date}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            app.status === "approved"
+                              ? "bg-green-100 text-green-800"
+                              : app.status === "rejected"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <Link
+                          href={`/admin/kyb/${app.id}`}
+                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+                        >
+                          View
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )
-  
 }
 
