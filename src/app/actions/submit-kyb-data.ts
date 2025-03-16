@@ -10,7 +10,7 @@ interface DocumentReference {
   publicId: string
   uploadedAt: string
   resourceType: string
-  value?: string
+  value?: unknown
 }
 interface BusinessDetails {
   businessName: string
@@ -27,8 +27,9 @@ interface KYBD{
   status: unknown
    businessDetails: BusinessDetails
   documents: Record<string, DocumentReference>
-  contactName: string
-  email: string
+  contactName?: string
+  submittedAt?: string;
+  email?: string
 }
 
 export async function submitKybData(businessId: string, kybData:KYBD, address:string) {
