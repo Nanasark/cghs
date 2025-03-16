@@ -2,15 +2,23 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { ReactNode, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { LayoutDashboard, Users, FileText, Settings, LogOut, Menu, X } from "lucide-react"
+import AdminAuthWrapper from "@/components/admin-auth-wrapper"
 
 
+export default function AdminLayout({ children }: { children: ReactNode }) {
+  return (
+    <AdminAuthWrapper>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </AdminAuthWrapper>
+  )
+}
 
-export default function AdminLayout({
+ function AdminLayoutContent({
   children,
 }: {
   children: React.ReactNode

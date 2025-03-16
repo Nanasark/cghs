@@ -1,7 +1,7 @@
 "use server"
 import { db } from "@/lib/db"
 
-function delay(ms) {
+function delay(ms:number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
