@@ -13,6 +13,10 @@ import { submitKybData } from "@/app/actions/submit-kyb-data"
 import { useActiveAccount } from "thirdweb/react"
 import EmailLogin from "../login/withEmail"
 import { isAddress } from "thirdweb"
+import { getUserEmail } from "thirdweb/wallets/in-app";
+import { client } from "@/app/client"
+ 
+
 
 interface UploadResult {
   public_id: string;
@@ -177,6 +181,7 @@ export default function BusinessDocumentsForm({ initialData, onBack }: BusinessD
     try {
       // 1️⃣ Upload all files first
       const documentReferences: KYBDocuments = {}
+      const email = await getUserEmail({ client });
 
       // Process business documents from current step
       for (const field of documentFields) {
@@ -307,6 +312,7 @@ export default function BusinessDocumentsForm({ initialData, onBack }: BusinessD
         documents: documentReferences, // Now contains all uploaded files
         submittedAt: new Date().toISOString(),
         status: "pending",
+        email:email
       }
 
       // 3️⃣ Submit the complete KYB data to backend

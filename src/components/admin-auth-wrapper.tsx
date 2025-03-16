@@ -25,7 +25,7 @@ export default function AdminAuthWrapper({ children }: { children: React.ReactNo
         const email = await getUserEmail({client})
 
         // Check if the user is an admin
-        const authorized = isAdmin(email)
+        const authorized = await isAdmin(email)
         setIsAuthorized(authorized)
 
         // If not authorized, you could also redirect instead of showing the unauthorized page
