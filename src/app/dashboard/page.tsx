@@ -13,7 +13,8 @@ import HelpSupportCard from "@/components/dashboard/help-support-card"
 import UpdateKybModal from "@/components/dashboard/update-kyb-modal"
 import { getUserKybData } from "@/app/actions/get-user-kyb-data"
 import { FileText } from "lucide-react"
-import { useActiveAccount } from "thirdweb/react"
+import { useActiveAccount, } from "thirdweb/react"
+
 
 
 interface KYBDocument {

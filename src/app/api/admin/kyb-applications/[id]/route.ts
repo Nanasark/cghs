@@ -41,9 +41,13 @@ export async function GET(request: Request, {
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, {
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
   try {
-    const id = params.id
+    const { id } = await params
     const data = await request.json()
 
     // Update KYB application in Supabase
