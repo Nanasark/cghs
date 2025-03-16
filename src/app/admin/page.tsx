@@ -1,8 +1,21 @@
+"use client"
 import Link from "next/link"
-import { FileText, UserCheck, UserX, Clock } from "lucide-react"
+import { FileText, UserCheck, UserX, Clock, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react"
+interface KYBApplication {
+  id: string
+  businessName: string
+  contactName: string
+  email: string
+  date: string
+  status: "pending" | "approved" | "rejected"
+}
 
 export default function AdminDashboard() {
   // In a real application, these would come from your database
+    const [applications, setApplications] = useState<KYBApplication[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
   const stats = [
     { name: "Total Applications", value: 42, icon: FileText, href: "/admin/kyb" },
     { name: "Pending Review", value: 12, icon: Clock, href: "/admin/kyb?status=pending" },
@@ -10,6 +23,31 @@ export default function AdminDashboard() {
     { name: "Rejected", value: 6, icon: UserX, href: "/admin/kyb?status=rejected" },
   ]
 
+  useEffect(() => {
+      const fetchApplications = async () => {
+        setIsLoading(true)
+        setError(null)
+  
+        try {
+          const response = await fetch("/api/admin/kyb-applications")
+  
+          if (!response.ok) {
+            throw new Error(`Error fetching applications: ${response.statusText}`)
+          }
+  
+          const data = await response.json()
+          setApplications(data)
+        } catch (err) {
+          console.error("Failed to fetch KYB applications:", err)
+          setError("Failed to load applications. Please try again.")
+        } finally {
+          setIsLoading(false)
+        }
+      }
+  
+      fetchApplications()
+  }, [])
+  
   return (
     <div className="space-y-6">
       <div>
@@ -38,13 +76,26 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="bg-white p-4 rounded-lg shadow">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Recent Applications</h2>
+          
+                  {isLoading ? (
+                    <div className="flex justify-center items-center py-12">
+                      <Loader2 className="h-8 w-8 text-emerald-500 animate-spin" />
+                      <span className="ml-3 text-gray-600">Loading applications...</span>
+                    </div>
+                  ) : error ? (
+                    <div className="text-center py-8">
+                      <p className="text-red-500">{error}</p>
+                      <button
+                        onClick={() => window.location.reload()}
+                        className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700"
+                      >
+                        Try Again
+                      </button>
+                    </div>
+                  ) :
           <div className="space-y-4">
-            {[
-              { id: "APP123", business: "Accra Fintech Ltd", date: "2023-03-12", status: "pending" },
-              { id: "APP122", business: "Ghana Traders Co.", date: "2023-03-11", status: "approved" },
-              { id: "APP121", business: "Kumasi Retail Group", date: "2023-03-10", status: "rejected" },
-              { id: "APP120", business: "Tema Exports Inc.", date: "2023-03-09", status: "approved" },
-            ].map((app) => (
+            
+            {applications.slice(0, 4).map((app) => (
               <Link
                 key={app.id}
                 href={`/admin/kyb/${app.id}`}
@@ -52,8 +103,8 @@ export default function AdminDashboard() {
               >
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="font-medium text-gray-900">{app.business}</p>
-                    <p className="text-sm text-gray-500">Application ID: {app.id}</p>
+                    <p className="font-medium text-gray-900">{app.businessName}</p>
+                    <p className="text-sm text-gray-500">Application ID: {app.id.slice(0, 6)}...</p>
                   </div>
                   <div className="flex items-center">
                     <span className="text-sm text-gray-500 mr-2">{app.date}</span>
@@ -73,6 +124,7 @@ export default function AdminDashboard() {
               </Link>
             ))}
           </div>
+          }
           <div className="mt-4">
             <Link href="/admin/kyb" className="text-sm font-medium text-emerald-600 hover:text-emerald-700">
               View all applications →
