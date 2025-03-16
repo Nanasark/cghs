@@ -8,15 +8,20 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { LayoutDashboard, Users, FileText, Settings, LogOut, Menu, X } from "lucide-react"
 import AdminAuthWrapper from "@/components/admin-auth-wrapper"
+import { ThirdwebProvider } from "thirdweb/react"
 
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
+    <ThirdwebProvider>
     <AdminAuthWrapper>
       <AdminLayoutContent>{children}</AdminLayoutContent>
-    </AdminAuthWrapper>
+      </AdminAuthWrapper>
+    </ThirdwebProvider>
   )
 }
+
+
 
  function AdminLayoutContent({
   children,

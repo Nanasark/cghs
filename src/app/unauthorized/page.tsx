@@ -1,6 +1,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { AlertTriangle } from "lucide-react"
+import EmailLogin from "@/components/login/withEmail"
 
 export default function UnauthorizedPage() {
   return (
@@ -17,7 +18,7 @@ export default function UnauthorizedPage() {
         <h1 className="text-2xl font-semibold text-gray-900">Access Denied</h1>
 
         <p className="text-gray-600">
-          You don&apos;t have permission to access the admin area. If you believe this is an error, please contact support.
+          This page is not available to you, If you are not Logged In , Login and refresh. If you believe this is an error, please contact support.
         </p>
 
         <div className="pt-4 space-y-4">
@@ -34,6 +35,8 @@ export default function UnauthorizedPage() {
           >
             Return to Home
           </Link>
+
+          <EmailLogin label="Sign In" />
         </div>
       </div>
     </div>

@@ -4,8 +4,12 @@ import Image from "next/image"
 import Link from "next/link"
 import { useState } from "react"
 import EmailLogin from "./login/withEmail"
+import { useActiveAccount } from "thirdweb/react"
+import { isAddress } from "thirdweb"
 
 export default function Header() {
+  const account = useActiveAccount()
+  const address = account? account.address :""
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   return (
@@ -32,14 +36,18 @@ export default function Header() {
               FAQ
             </Link>
           </nav>
-          <div className="flex items-center">
-            {/* <Link
-              href="/signup"
+          <div className="flex gap-10 items-center">
+            {isAddress(address) &&
+              <Link
+              href="/dashboard"
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-            >
-              Get Started
-            </Link> */}
+              >
+             Dashboard
+              </Link>
+            }
             <EmailLogin label={"Sign In"} />
+
+            
             <button className="ml-4 md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
