@@ -8,7 +8,8 @@ export async function POST(request: Request) {
     const signature = request.headers.get("x-hmac-signature") || "";
 
     // Get raw request body for signature verification
-    const bodyText = await request.text();
+      const bodyText = await request.text();
+      const 
 
     // Verify the signature
     if (!verifySignature(bodyText, signature)) {
