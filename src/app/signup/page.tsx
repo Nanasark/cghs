@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -8,10 +8,47 @@ import BusinessDetailsForm from "@/components/signup/business-details-form"
 import AuthorisedRepresentativeForm from "@/components/signup/authorised-representative-form"
 import ControllersForm from "@/components/signup/controllers-form"
 import BusinessDocumentsForm from "@/components/signup/business-documents-form"
+import { getUserKycData } from "../actions/get-user-kyc-data"
+import { useActiveAccount } from "thirdweb/react"
+import KYCPage from "../kyc/page"
+import Header from "@/components/header"
+
+
+
+export default function KYBApplication() {
+  const account = useActiveAccount()
+  const address = account ? account.address : ""
+  const [kycStatus,setKYCStatus]= useState("")
+  useEffect(()=>{
+    async function checkStatus() {
+      const kycdata = await getUserKycData(address) 
+
+      if (kycdata?.status) {
+        setKYCStatus(kycdata?.status)
+      }
+    }
+
+    checkStatus()
+  }, [address])
+  
+  return (<>
+   
+   {kycStatus === "approved"?
+
+      <KYBPage /> : <KYCPage/>
+    }
+  </>
+   
+  )
+
+  
+  
+
+}
 
 const steps = ["Business Details", "Authorised Representative", "Controllers", "Business Documents"]
 
-export default function KYBPage() {
+ function KYBPage() {
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({
     // Business Details
@@ -82,7 +119,8 @@ export default function KYBPage() {
     setStep((prev) => Math.max(prev - 1, 1))
   }
 
-  return (
+   return (
+    <> <Header/>
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <div className="mb-8">
         <Image src="/logo.svg" alt="cGHS Logo" width={48} height={48} className="w-12 h-12" />
@@ -142,7 +180,8 @@ export default function KYBPage() {
           Log in
         </Link>
       </div>
-    </div>
+       </div>
+     </>
   )
 }
 

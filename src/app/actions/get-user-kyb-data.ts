@@ -33,7 +33,7 @@ export async function getUserKybData(walletAddress: string) {
     // Get the KYB data for the business
     const { data: kybData, error: kybError } = await db
       .from("kyb")
-      .select("document_references,status")
+      .select("document_references,status, business_details")
       // .select("status, documents, businessDetails, feedback, issues")
       .eq("userAddress", walletAddress)
       .single()

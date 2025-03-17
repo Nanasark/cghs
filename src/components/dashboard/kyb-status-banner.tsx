@@ -6,7 +6,7 @@ interface KybStatusBannerProps {
   status: string
   feedback?: string
   onUpdateKyb: () => void
-  onToggleStatus: () => void
+  onToggleStatus?: () => void
 }
 
 export default function KybStatusBanner({ status, feedback, onUpdateKyb, onToggleStatus }: KybStatusBannerProps) {

@@ -25,12 +25,23 @@ interface KYBDocument {
   resourceType: string
 }
 
+interface BusinessDetails {
+  businessName: string
+  addressLine1: string
+  addressLine2?: string
+  cityRegion: string
+  state: string
+  country: string
+  jurisdiction: string
+  phoneNumber: string
+}
+
+type Business =Record<string,BusinessDetails>
+
 type KYBDocuments = Record<string, KYBDocument>
 
 // Mock data - in a real app, this would come from your API
 const mockUser = {
-  businessName: "Accra Fintech Ltd",
-  kybStatus: "pending", // "pending", "approved", "rejected"
   balance: 5000,
   notifications: [
     {
@@ -71,8 +82,9 @@ const mockUser = {
 
 export default function Dashboard() {
   const [user, setUser] = useState(mockUser)
+  const [businessDetails, setBusinessDetails] = useState<Business>({})
   const [activeTab, setActiveTab] = useState("overview")
-  const [kybStatus, setKybStatus] = useState(user.kybStatus)
+  const [kybStatus, setKybStatus] = useState("")
   const [showUpdateKybModal, setShowUpdateKybModal] = useState(false)
   const [kybDocuments, setKybDocuments] = useState<KYBDocuments>({})
   const [isLoading, setIsLoading] = useState(true)
@@ -90,6 +102,10 @@ export default function Dashboard() {
           if (data.status) {
             setKybStatus(data.status)
             setUser((prev) => ({ ...prev, kybStatus: data.status }))
+          }
+
+          if (data.business_details) {
+            setBusinessDetails(data.business_details)
           }
 
           // Set KYB documents if available
@@ -110,23 +126,23 @@ export default function Dashboard() {
   }, [address])
 
   // For demo purposes - toggle KYB status
-  const toggleKybStatus = () => {
-    const newStatus = kybStatus === "approved" ? "pending" : kybStatus === "pending" ? "rejected" : "approved"
+  // const toggleKybStatus = () => {
+  //   const newStatus = kybStatus === "approved" ? "pending" : kybStatus === "pending" ? "rejected" : "approved"
 
-    setKybStatus(newStatus)
-    setUser({ ...user, kybStatus: newStatus })
-  }
+  //   setKybStatus(newStatus)
+  //   setUser({ ...user, kybStatus: newStatus })
+  // }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header businessName={user.businessName} notifications={user.notifications} />
+      <Header businessName={`${businessDetails.businessName}`} notifications={user.notifications} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <KybStatusBanner
           status={kybStatus}
           feedback={user.kybFeedback}
           onUpdateKyb={() => setShowUpdateKybModal(true)}
-          onToggleStatus={toggleKybStatus}
+          // onToggleStatus={toggleKybStatus}
         />
 
         <DashboardTabs activeTab={activeTab} onTabChange={setActiveTab} />
