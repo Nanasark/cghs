@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         verification: {
-          callback: `https://cghs-rose.vercell.app/api/veriff-webhook`,
+          callback: `https://cghs-rose.vercel.app/api/veriff-webhook`,
           person: {
             firstName: firstName || "John",
             lastName: lastName || "Smith",

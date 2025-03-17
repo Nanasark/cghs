@@ -3,6 +3,7 @@
 import EmailLogin from "@/components/login/withEmail";
 import { useActiveAccount } from "thirdweb/react";
 import VeriffVerification from "@/components/kyc-verification-card";
+import Header from "@/components/header";
 
 // "use client"
 export default function KYCPage() {
@@ -19,7 +20,9 @@ export default function KYCPage() {
     return (
      
         <div>
-             <EmailLogin  label="sign in"/>
+            <Header/>
+            <EmailLogin label="sign in" />
+            
       <h1>Welcome, User</h1>
       {/* <KycVerificationCard 
         kycStatus={""} 

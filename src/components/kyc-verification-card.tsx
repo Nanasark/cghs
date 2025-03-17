@@ -212,7 +212,7 @@ const VeriffVerification = ({ user}: KycVerificationCardProps) => {
         if (window.Veriff) {
           const veriff = window.Veriff({
             host: "https://stationapi.veriff.com",
-            apiKey: "f600dd61-d3fe-4445-8c71-199c38204e83", // Replace with your actual API key
+            apiKey: process.env.NEXT_PUBLIC_VERIFF_API_KEY!, // Replace with your actual API key
             parentId: "veriff-root",
             onSession: (err: any, response:any) => {
               if (!err) {
