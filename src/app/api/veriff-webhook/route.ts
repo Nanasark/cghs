@@ -17,22 +17,23 @@ export async function POST(request: Request) {
 
     // Parse the verified request body
     const body = JSON.parse(bodyText);
+    console.log(body)
 
     // Extract verification details
-    const { id, status, vendorData } = body.verification;
-    const userId = vendorData; // This is the user’s unique identifier
+    const {verification, status } = body;
+    const userId = verification.vendorData; // This is the user’s unique identifier
 
     // Handle different KYC verification statuses
     let updateData: Record<string, unknown> = { kyc_status: status };
 
-    if (status === "approved") {
+    if (verification.status === "approved") {
       updateData = {
         address: userId,
         kyc_status: "approved",
         kyc_verified_at: new Date().toISOString(),
-        kyc_verification_id: id,
+        kyc_verification_id: verification.id,
       };
-    } else if (status === "declined") {
+    } else if (verification.status === "declined") {
       updateData = {
         kyc_status: "rejected",
         kyc_rejection_reason: body.verification.reason || "Unknown reason",
