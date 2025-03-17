@@ -51,9 +51,9 @@ export async function POST(request: Request) {
 
 // HMAC Signature Verification
 function verifySignature(payload: string, signature: string): boolean {
-  const secret = process.env.VERIFF_WEBHOOK_SECRET;
+  const secret = process.env.VERIFF_API_KEY;
   if (!secret) {
-    console.error("Missing VERIFF_WEBHOOK_SECRET");
+    console.error("Missing VERIFF_API_KEY");
     return false;
   }
 
