@@ -8,41 +8,56 @@ export async function POST(request: Request) {
     const signature = request.headers.get("x-hmac-signature") || "";
 
     // Get raw request body for signature verification
-      const bodyText = await request.text();
-      const 
+    const bodyText = await request.text();
 
     // Verify the signature
     if (!verifySignature(bodyText, signature)) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
-    // Parse the verified request body
+    // Parse JSON
     const body = JSON.parse(bodyText);
-    console.log(body)
+    console.log("Received Webhook Payload:", body);
 
-    // Extract verification details
-    const {verification, status } = body;
-    const userId = verification.vendorData; // This is the user’s unique identifier
+    // Extract data safely
+    const verification = body.data?.verification ?? null; // ✅ Handles new payload structure
+    const userId = body.vendorData || null; // ✅ Supports `vendorData`
+    const status = verification?.decision || body.status || "unknown"; // ✅ Uses decision/status
 
-    // Handle different KYC verification statuses
+    // Ensure we have enough data to process
+    if (!verification) {
+      console.error("Missing verification data:", body);
+      return NextResponse.json({ error: "Invalid payload structure" }, { status: 400 });
+    }
+
+    if (!userId) {
+      console.warn("Warning: vendorData is missing or null. Cannot link verification to a user.");
+    }
+
+    // Handle different verification statuses
     let updateData: Record<string, unknown> = { kyc_status: status };
 
-    if (verification.status === "approved") {
+    if (status === "approved") {
       updateData = {
         address: userId,
         kyc_status: "approved",
         kyc_verified_at: new Date().toISOString(),
-        kyc_verification_id: verification.id,
+        kyc_verification_id: body.sessionId, // ✅ New identifier in payload
+        document_type: verification.document?.type?.value || "unknown",
+        document_country: verification.document?.country?.value || "unknown",
+        document_number: verification.document?.number?.value || "unknown",
       };
-    } else if (verification.status === "declined") {
+    } else if (status === "declined") {
       updateData = {
         kyc_status: "rejected",
-        kyc_rejection_reason: body.verification.reason || "Unknown reason",
+        kyc_rejection_reason: "Decision score too low" // Customize as needed
       };
     }
 
-    // Upsert the user record with KYC status
-    await db.from("users").upsert(updateData, { onConflict: "address" });
+    // Upsert the user record with KYC status (only if we have a userId)
+    if (userId) {
+      await db.from("users").upsert(updateData, { onConflict: "address" });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
