@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     // Extract data safely
     const verification = body.data?.verification ?? null; // ✅ Handles new payload structure
-    const userId = body.vendorData || null; // ✅ Supports `vendorData`
+    const userId = body.vendorData || null; 
     const status = verification?.decision || body.status || "unknown"; // ✅ Uses decision/status
 
     // Ensure we have enough data to process
@@ -55,9 +55,17 @@ export async function POST(request: Request) {
     }
 
     // Upsert the user record with KYC status (only if we have a userId)
-    if (userId) {
-      await db.from("users").upsert(updateData, { onConflict: "address" });
-    }
+  try {
+  const { error } = await db.from("users").upsert(updateData, { onConflict: "address" });
+  if (error) {
+    console.error("❌ Supabase Upsert Error:", error);
+    return NextResponse.json({ error: "Database update failed", details: error }, { status: 500 });
+  }
+} catch (err) {
+  console.error("❌ Unexpected Supabase Error:", err);
+  return NextResponse.json({ error: "Unexpected database error" }, { status: 500 });
+}
+
 
     return NextResponse.json({ success: true });
   } catch (error) {
