@@ -23,7 +23,7 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
   const [success, setSuccess] = useState<boolean>(false)
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false)
   const [requestId, setRequestId] = useState<string | null>(null)
-  const [channel, setChannel] = useState<number>(6) // Default channel
+  const [channel, setChannel] = useState<number>(13) // Default channel
   const [initialBalance, setInitialBalance] = useState<number | null>(null)
 
   const account = useActiveAccount()
@@ -47,14 +47,13 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
     }
   }, [success])
 
-  const fetchBalance = async (): Promise<number> => {
+const fetchBalance = async (): Promise<number> => {
     try {
       const response = await balanceOf({
         contract: tokencontract,
         address: userAddress,
         });
 
-    
       const data = toEther(response)
       return data || 0
     } catch (error) {
@@ -62,6 +61,7 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
       return 0
     }
   }
+
 
   const handleInitiateDeposit = async (e: React.FormEvent) => {
     e.preventDefault()

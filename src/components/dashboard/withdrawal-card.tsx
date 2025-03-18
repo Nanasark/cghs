@@ -3,18 +3,18 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { ArrowDownCircle, Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import { ArrowUpCircle, Loader2, CheckCircle, AlertCircle, ExternalLink } from "lucide-react"
 import { useActiveAccount } from "thirdweb/react"
 import { balanceOf } from "thirdweb/extensions/erc20";
 import {tokencontract} from "@/app/contract"
 import { toEther } from "thirdweb/utils";
 
-interface DepositCardProps {
+interface WithdrawalCardProps {
   onBalanceUpdate: () => void
   kybStatus: string
 }
 
-export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardProps) {
+export default function WithdrawalCard({ onBalanceUpdate, kybStatus }: WithdrawalCardProps) {
   const [amount, setAmount] = useState<string>("")
   const [receiver, setReceiver] = useState<string>("")
   const [referenceNote, setReferenceNote] = useState<string>("")
@@ -25,6 +25,7 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
   const [requestId, setRequestId] = useState<string | null>(null)
   const [channel, setChannel] = useState<number>(6) // Default channel
   const [initialBalance, setInitialBalance] = useState<number | null>(null)
+  const [transactionHash, setTransactionHash] = useState<string | null>(null)
 
   const account = useActiveAccount()
   const userAddress = account ? account.address : ""
@@ -41,7 +42,8 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
         setReceiver("")
         setReferenceNote("")
         setRequestId(null)
-      }, 5000)
+        // Don't reset transaction hash so user can still click it
+      }, 10000)
 
       return () => clearTimeout(timer)
     }
@@ -49,12 +51,14 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
 
   const fetchBalance = async (): Promise<number> => {
     try {
-      const response = await balanceOf({
+       const response = await balanceOf({
         contract: tokencontract,
         address: userAddress,
         });
 
-    
+      if (!response.ok) {
+        throw new Error("Failed to fetch balance")
+      }
       const data = toEther(response)
       return data || 0
     } catch (error) {
@@ -63,11 +67,11 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
     }
   }
 
-  const handleInitiateDeposit = async (e: React.FormEvent) => {
+  const handleInitiateWithdrawal = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!hasAccess) {
-      setError("You need to complete KYB verification to make deposits")
+      setError("You need to complete KYB verification to make withdrawals")
       return
     }
 
@@ -89,8 +93,13 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
       const balance = await fetchBalance()
       setInitialBalance(balance)
 
-      // Call deposit API
-      const response = await fetch("https://transakt-cghs.onrender.com/depositCollateral", {
+      // Check if user has enough balance
+      if (balance < Number.parseFloat(amount)) {
+        throw new Error("Insufficient balance for this withdrawal")
+      }
+
+      // Call withdraw API
+      const response = await fetch("https://transakt-cghs.onrender.com/withdraw", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -98,7 +107,7 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
         body: JSON.stringify({
           countryCode: "GH",
           amount: Number.parseFloat(amount),
-          referenceNote: referenceNote || "Deposit via cGHS Dashboard",
+          referenceNote: referenceNote || "Withdrawal via cGHS Dashboard",
           receiver: receiver,
           channel: channel,
           userAddress: userAddress,
@@ -107,7 +116,7 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to initiate deposit")
+        throw new Error(errorData.message || "Failed to initiate withdrawal")
       }
 
       const data = await response.json()
@@ -119,20 +128,20 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
         throw new Error("Invalid response from server")
       }
     } catch (error: any) {
-      setError(error.message || "An error occurred while initiating deposit")
+      setError(error.message || "An error occurred while initiating withdrawal")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleConfirmDeposit = async () => {
+  const handleConfirmWithdrawal = async () => {
     if (!requestId) return
 
     setIsLoading(true)
     setError(null)
 
     try {
-      const response = await fetch("https://transakt-cghs.onrender.com/executeDeposit", {
+      const response = await fetch("https://transakt-cghs.onrender.com/executeWithdraw", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -141,42 +150,48 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
           requestId: requestId,
           channel: channel,
           receiver: receiver,
-          referenceNote: referenceNote || "Deposit via cGHS Dashboard",
         }),
       })
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to execute deposit")
+        throw new Error(errorData.message || "Failed to execute withdrawal")
       }
 
       const data = await response.json()
 
       if (data.success) {
+        // Store transaction hash if available
+        if (data.transactionHash) {
+          setTransactionHash(data.transactionHash)
+        }
+
         // Wait a moment for the balance to update
         setTimeout(async () => {
-          // Check if balance increased
+          // Check if balance decreased
           const newBalance = await fetchBalance()
-          if (initialBalance !== null && newBalance > initialBalance) {
+          if (initialBalance !== null && newBalance < initialBalance) {
             setSuccess(true)
             onBalanceUpdate() // Update parent component balance
           } else {
-            setError("Deposit completed, but balance hasn't updated yet. It may take a few minutes.")
+            // Still mark as success but note the balance hasn't updated yet
+            setSuccess(true)
+            console.log("Withdrawal completed, but balance hasn't updated yet")
           }
           setShowConfirmModal(false)
           setIsLoading(false)
         }, 3000)
       } else {
-        throw new Error("Deposit failed")
+        throw new Error("Withdrawal failed")
       }
     } catch (error: any) {
-      setError(error.message || "An error occurred while confirming deposit")
+      setError(error.message || "An error occurred while confirming withdrawal")
       setShowConfirmModal(false)
       setIsLoading(false)
     }
   }
 
-  const handleCancelDeposit = () => {
+  const handleCancelWithdrawal = () => {
     setShowConfirmModal(false)
     setRequestId(null)
   }
@@ -185,24 +200,37 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
     <div className="bg-white rounded-lg shadow-sm overflow-hidden">
       <div className="p-6">
         <div className="flex items-center mb-4">
-          <ArrowDownCircle className="h-5 w-5 text-emerald-500 mr-2" />
-          <h2 className="text-lg font-medium text-gray-900">Deposit cGHS</h2>
+          <ArrowUpCircle className="h-5 w-5 text-emerald-500 mr-2" />
+          <h2 className="text-lg font-medium text-gray-900">Withdraw cGHS</h2>
         </div>
 
         {kybStatus !== "approved" ? (
           <div className="bg-amber-50 p-4 rounded-md">
-            <p className="text-sm text-amber-800">Complete KYB verification to make deposits</p>
+            <p className="text-sm text-amber-800">Complete KYB verification to make withdrawals</p>
           </div>
         ) : success ? (
           <div className="bg-green-50 p-4 rounded-md flex items-start">
             <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 mr-2" />
             <div>
-              <h3 className="text-sm font-medium text-green-800">Deposit Successful</h3>
-              <p className="text-sm text-green-700 mt-1">Your deposit of ₵{amount} has been processed successfully.</p>
+              <h3 className="text-sm font-medium text-green-800">Withdrawal Successful</h3>
+              <p className="text-sm text-green-700 mt-1">
+                Your withdrawal of ₵{amount} has been processed successfully.
+              </p>
+              {transactionHash && (
+                <a
+                  href={`https://scrollscan.com/tx/${transactionHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center text-sm text-emerald-600 hover:text-emerald-700"
+                >
+                  View transaction on ScrollScan
+                  <ExternalLink className="ml-1 h-3 w-3" />
+                </a>
+              )}
             </div>
           </div>
         ) : (
-          <form onSubmit={handleInitiateDeposit} className="space-y-4">
+          <form onSubmit={handleInitiateWithdrawal} className="space-y-4">
             {error && (
               <div className="bg-red-50 p-3 rounded-md flex items-start">
                 <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-2" />
@@ -211,11 +239,11 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
             )}
 
             <div>
-              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="withdrawal-amount" className="block text-sm font-medium text-gray-700 mb-1">
                 Amount (₵) <span className="text-red-500">*</span>
               </label>
               <input
-                id="amount"
+                id="withdrawal-amount"
                 type="number"
                 step="0.01"
                 min="1"
@@ -229,11 +257,11 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
             </div>
 
             <div>
-              <label htmlFor="receiver" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="withdrawal-receiver" className="block text-sm font-medium text-gray-700 mb-1">
                 Mobile Money Number <span className="text-red-500">*</span>
               </label>
               <input
-                id="receiver"
+                id="withdrawal-receiver"
                 type="tel"
                 value={receiver}
                 onChange={(e) => setReceiver(e.target.value)}
@@ -242,15 +270,15 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
                 required
                 disabled={isLoading}
               />
-              <p className="mt-1 text-xs text-gray-500">Enter the mobile money number to pay from</p>
+              <p className="mt-1 text-xs text-gray-500">Enter the mobile money number to receive funds</p>
             </div>
 
             <div>
-              <label htmlFor="reference" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="withdrawal-reference" className="block text-sm font-medium text-gray-700 mb-1">
                 Reference Note
               </label>
               <input
-                id="reference"
+                id="withdrawal-reference"
                 type="text"
                 value={referenceNote}
                 onChange={(e) => setReferenceNote(e.target.value)}
@@ -271,7 +299,7 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
                   Processing...
                 </>
               ) : (
-                "Deposit"
+                "Withdraw"
               )}
             </button>
           </form>
@@ -282,25 +310,26 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Confirm Deposit</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Confirm Withdrawal</h3>
             <p className="text-gray-600 mb-4">
-              Please confirm your deposit of <span className="font-semibold">₵{amount}</span> from mobile number{" "}
+              Please confirm your withdrawal of <span className="font-semibold">₵{amount}</span> to mobile number{" "}
               <span className="font-semibold">{receiver}</span>.
             </p>
             <p className="text-sm text-gray-500 mb-6">
-              You will receive a prompt on your mobile phone. Please complete the payment to continue.
+              This transaction will be processed on the Scroll blockchain and funds will be sent to your mobile money
+              account.
             </p>
 
             <div className="flex space-x-3">
               <button
-                onClick={handleCancelDeposit}
+                onClick={handleCancelWithdrawal}
                 className="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
                 disabled={isLoading}
               >
                 Cancel
               </button>
               <button
-                onClick={handleConfirmDeposit}
+                onClick={handleConfirmWithdrawal}
                 className="flex-1 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50"
                 disabled={isLoading}
               >
