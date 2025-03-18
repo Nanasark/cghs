@@ -2,6 +2,7 @@
 import {client} from "@/app/client"
 import { ConnectButton } from "thirdweb/react";
 import {inAppWallet} from "thirdweb/wallets"
+import {chain, chainId} from "@/app/chain"
 interface Email{
     label:string
 }
@@ -13,6 +14,17 @@ export default function EmailLogin({label}: Email) {
                 wallets={[inAppWallet({
                     auth:{options:["email"]}
                 })]}
+                  chain={chain}
+        supportedTokens={{
+          [chainId]: [
+            {
+              name: "GHS Coin",
+              address: "0xf85aab5cd1029c8b3f765e4d3e5c871843e25740",
+              symbol: "CGHS",
+             
+            },
+          ],
+        }}
               theme={"light"}
               connectButton={{
                   className: "email-wallet",

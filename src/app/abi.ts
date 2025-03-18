@@ -1,4 +1,4 @@
-const tokenAbi = 
+export const tokenAbi = 
 [
     {
         "type": "constructor",

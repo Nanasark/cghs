@@ -258,7 +258,7 @@ import { useState, useEffect } from "react"
 import Header from "@/components/dashboard/header"
 import KybStatusBanner from "@/components/dashboard/kyb-status-banner"
 import DashboardTabs from "@/components/dashboard/dashboard-tabs"
-import BalanceCard from "@/components/dashboard/balance-card"
+// import BalanceCard from "@/components/dashboard/balance-card"
 import TransactionsCard from "@/components/dashboard/transactions-card"
 import KybStatusCard from "@/components/dashboard/kyb-status-card"
 import KybDocumentsCard from "@/components/dashboard/kyb-documents-card"
@@ -345,7 +345,7 @@ export default function Dashboard() {
   const [showUpdateKybModal, setShowUpdateKybModal] = useState(false)
   const [kybDocuments, setKybDocuments] = useState<KYBDocuments>({})
   const [isLoading, setIsLoading] = useState(true)
-  const [balance, setBalance] = useState<number>(user.balance)
+  // const [balance, setBalance] = useState<number>(user.balance)
   const account = useActiveAccount()
   const address = account ? account.address : ""
 
@@ -383,6 +383,7 @@ export default function Dashboard() {
     }
 
     fetchKybData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address])
 
   // Fetch balance from API
@@ -395,14 +396,15 @@ export default function Dashboard() {
         address: address,
         });
       const data = toEther(response)
-      return data || 0
-      if (response.ok) {
-      
-        if (data !== undefined) {
-          setBalance(data)
-          setUser((prev) => ({ ...prev, balance: data }))
+      if (data !== undefined) {
+          // setBalance(Number(data))
+          setUser((prev) => ({ ...prev, balance: Number(data) }))
         }
-      }
+      return Number(data) || 0
+     
+      
+        
+   
     } catch (error) {
       console.error("Error fetching balance:", error)
     }
@@ -415,7 +417,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header businessName={businessDetails.businessName || "Business Name"} notifications={user.notifications} />
+      <Header businessName={`${businessDetails.businessName}` || "Business Name"} notifications={user.notifications} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <KybStatusBanner
@@ -430,7 +432,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
-              <BalanceCard balance={balance} kybStatus={kybStatus} onUpdateKyb={() => setShowUpdateKybModal(true)} />
+              {/* <BalanceCard balance={balance} kybStatus={kybStatus} onUpdateKyb={() => setShowUpdateKybModal(true)} /> */}
 
               <TransactionsSection kybStatus={kybStatus} onBalanceUpdate={handleBalanceUpdate} />
 

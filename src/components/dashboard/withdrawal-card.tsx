@@ -8,6 +8,8 @@ import { useActiveAccount } from "thirdweb/react"
 import { balanceOf } from "thirdweb/extensions/erc20";
 import {tokencontract} from "@/app/contract"
 import { toEther } from "thirdweb/utils";
+import { getChannel } from "@/lib/utils"
+import { useLandContract } from "@/lib/use-contract"
 
 interface WithdrawalCardProps {
   onBalanceUpdate: () => void
@@ -15,18 +17,21 @@ interface WithdrawalCardProps {
 }
 
 export default function WithdrawalCard({ onBalanceUpdate, kybStatus }: WithdrawalCardProps) {
-  const [amount, setAmount] = useState<string>("")
+   const [amount, setAmount] = useState<string>("")
   const [receiver, setReceiver] = useState<string>("")
   const [referenceNote, setReferenceNote] = useState<string>("")
+  const [network, setNetwork] = useState<string>("MTN")
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<boolean>(false)
-  const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false)
   const [requestId, setRequestId] = useState<string | null>(null)
-  const [channel, setChannel] = useState<number>(6) // Default channel
   const [initialBalance, setInitialBalance] = useState<number | null>(null)
   const [transactionHash, setTransactionHash] = useState<string | null>(null)
+  const [transferStep, setTransferStep] = useState<"initiated" | "transferring" | "redeeming" | "completed" | null>(
+    null,
+  )
 
+  const { TransferERC } = useLandContract()
   const account = useActiveAccount()
   const userAddress = account ? account.address : ""
 
@@ -56,11 +61,9 @@ export default function WithdrawalCard({ onBalanceUpdate, kybStatus }: Withdrawa
         address: userAddress,
         });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch balance")
-      }
+  
       const data = toEther(response)
-      return data || 0
+      return Number(data) || 0
     } catch (error) {
       console.error("Error fetching balance:", error)
       return 0
@@ -75,7 +78,7 @@ export default function WithdrawalCard({ onBalanceUpdate, kybStatus }: Withdrawa
       return
     }
 
-    if (!amount || !receiver) {
+    if (!amount || !receiver || !network) {
       setError("Please fill in all required fields")
       return
     }
@@ -98,7 +101,15 @@ export default function WithdrawalCard({ onBalanceUpdate, kybStatus }: Withdrawa
         throw new Error("Insufficient balance for this withdrawal")
       }
 
-      // Call withdraw API
+      // Get the correct channel number based on network and transaction type
+      const channel = getChannel(network, "withdrawal")
+
+      if (channel === 0) {
+        throw new Error("Invalid network selected")
+      }
+
+      // Step 1: Call withdraw API to initiate the withdrawal
+      setTransferStep("initiated")
       const response = await fetch("https://transakt-cghs.onrender.com/withdraw", {
         method: "POST",
         headers: {
@@ -121,79 +132,72 @@ export default function WithdrawalCard({ onBalanceUpdate, kybStatus }: Withdrawa
 
       const data = await response.json()
 
-      if (data.success && data.requestId) {
+      if (data.status === "initiated" && data.requestId) {
         setRequestId(data.requestId)
-        setShowConfirmModal(true)
+
+        // Step 2: Transfer ERC20 tokens
+        setTransferStep("transferring")
+        const transferResult = await TransferERC(Number.parseFloat(amount))
+
+        if (transferResult) {
+          // Get the actual transaction hash from the transfer
+          const txHash = typeof transferResult === "string" ? transferResult : ""
+          setTransactionHash(txHash)
+
+          if (!txHash) {
+            throw new Error("Failed to get transaction hash from token transfer")
+          }
+
+          // Step 3: Call redeem-from-transfer API
+          setTransferStep("redeeming")
+          const redeemResponse = await fetch("https://transakt-cghs.onrender.com/redeem-from-transfer", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              transferTxHash: txHash,
+              channel: channel,
+              receiver: receiver,
+              requestId: data.requestId,
+            }),
+          })
+
+          if (!redeemResponse.ok) {
+            const redeemErrorData = await redeemResponse.json()
+            throw new Error(redeemErrorData.message || "Failed to redeem withdrawal")
+          }
+
+          setTransferStep("completed")
+
+          // Wait a moment for the balance to update
+          setTimeout(async () => {
+            // Check if balance decreased
+            const newBalance = await fetchBalance()
+            if (initialBalance !== null && newBalance < initialBalance) {
+              setSuccess(true)
+              onBalanceUpdate() // Update parent component balance
+            } else {
+              // Still mark as success but note the balance hasn't updated yet
+              setSuccess(true)
+              console.log("Withdrawal completed, but balance hasn't updated yet")
+            }
+            setIsLoading(false)
+          }, 3000)
+        } else {
+          throw new Error("Failed to transfer tokens")
+        }
       } else {
         throw new Error("Invalid response from server")
       }
-    } catch (error: any) {
-      setError(error.message || "An error occurred while initiating withdrawal")
+    } catch (error: unknown) {
+      setError(error.message || "An error occurred while processing withdrawal")
+      setTransferStep(null)
     } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleConfirmWithdrawal = async () => {
-    if (!requestId) return
-
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch("https://transakt-cghs.onrender.com/executeWithdraw", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          requestId: requestId,
-          channel: channel,
-          receiver: receiver,
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to execute withdrawal")
+      if (!success) {
+        setIsLoading(false)
       }
-
-      const data = await response.json()
-
-      if (data.success) {
-        // Store transaction hash if available
-        if (data.transactionHash) {
-          setTransactionHash(data.transactionHash)
-        }
-
-        // Wait a moment for the balance to update
-        setTimeout(async () => {
-          // Check if balance decreased
-          const newBalance = await fetchBalance()
-          if (initialBalance !== null && newBalance < initialBalance) {
-            setSuccess(true)
-            onBalanceUpdate() // Update parent component balance
-          } else {
-            // Still mark as success but note the balance hasn't updated yet
-            setSuccess(true)
-            console.log("Withdrawal completed, but balance hasn't updated yet")
-          }
-          setShowConfirmModal(false)
-          setIsLoading(false)
-        }, 3000)
-      } else {
-        throw new Error("Withdrawal failed")
-      }
-    } catch (error: any) {
-      setError(error.message || "An error occurred while confirming withdrawal")
-      setShowConfirmModal(false)
-      setIsLoading(false)
     }
-  }
-
-  const handleCancelWithdrawal = () => {
-    setShowConfirmModal(false)
-    setRequestId(null)
   }
 
   return (
@@ -229,6 +233,83 @@ export default function WithdrawalCard({ onBalanceUpdate, kybStatus }: Withdrawa
               )}
             </div>
           </div>
+        ) : transferStep ? (
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-md">
+              <h3 className="text-sm font-medium text-blue-800 mb-2">Withdrawal in Progress</h3>
+              <ul className="space-y-2">
+                <li className="flex items-center">
+                  <div className="mr-2 flex-shrink-0">
+                    {transferStep === "initiated" ||
+                    transferStep === "transferring" ||
+                    transferStep === "redeeming" ||
+                    transferStep === "completed" ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
+                    )}
+                  </div>
+                  <span className="text-sm text-gray-700">Withdrawal initiated</span>
+                </li>
+                <li className="flex items-center">
+                  <div className="mr-2 flex-shrink-0">
+                    {transferStep === "transferring" ? (
+                      <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+                    ) : transferStep === "redeeming" || transferStep === "completed" ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
+                    )}
+                  </div>
+                  <span className="text-sm text-gray-700">Transferring tokens</span>
+                </li>
+                <li className="flex items-center">
+                  <div className="mr-2 flex-shrink-0">
+                    {transferStep === "redeeming" ? (
+                      <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+                    ) : transferStep === "completed" ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
+                    )}
+                  </div>
+                  <span className="text-sm text-gray-700">Processing withdrawal</span>
+                </li>
+                <li className="flex items-center">
+                  <div className="mr-2 flex-shrink-0">
+                    {transferStep === "completed" ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
+                    )}
+                  </div>
+                  <span className="text-sm text-gray-700">Withdrawal completed</span>
+                </li>
+              </ul>
+              <p className="text-xs text-gray-500 mt-3">
+                Please do not close this window until the process is complete.
+              </p>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 p-3 rounded-md flex items-start">
+                <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-2" />
+                <div>
+                  <p className="text-sm text-red-700">{error}</p>
+                  <button
+                    onClick={() => {
+                      setError(null)
+                      setTransferStep(null)
+                      setIsLoading(false)
+                    }}
+                    className="text-xs text-red-600 underline mt-1"
+                  >
+                    Try again
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           <form onSubmit={handleInitiateWithdrawal} className="space-y-4">
             {error && (
@@ -254,6 +335,24 @@ export default function WithdrawalCard({ onBalanceUpdate, kybStatus }: Withdrawa
                 required
                 disabled={isLoading}
               />
+            </div>
+
+            <div>
+              <label htmlFor="withdrawal-network" className="block text-sm font-medium text-gray-700 mb-1">
+                Mobile Network <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="withdrawal-network"
+                value={network}
+                onChange={(e) => setNetwork(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                required
+                disabled={isLoading}
+              >
+                <option value="MTN">MTN Mobile Money</option>
+                <option value="Vodafone">Vodafone Cash</option>
+                <option value="AirtelTigo">AirtelTigo Money</option>
+              </select>
             </div>
 
             <div>
@@ -305,47 +404,6 @@ export default function WithdrawalCard({ onBalanceUpdate, kybStatus }: Withdrawa
           </form>
         )}
       </div>
-
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Confirm Withdrawal</h3>
-            <p className="text-gray-600 mb-4">
-              Please confirm your withdrawal of <span className="font-semibold">₵{amount}</span> to mobile number{" "}
-              <span className="font-semibold">{receiver}</span>.
-            </p>
-            <p className="text-sm text-gray-500 mb-6">
-              This transaction will be processed on the Scroll blockchain and funds will be sent to your mobile money
-              account.
-            </p>
-
-            <div className="flex space-x-3">
-              <button
-                onClick={handleCancelWithdrawal}
-                className="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-                disabled={isLoading}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmWithdrawal}
-                className="flex-1 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                    Processing...
-                  </>
-                ) : (
-                  "Confirm"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

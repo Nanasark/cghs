@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import type React from "react"
@@ -8,6 +9,8 @@ import { useActiveAccount } from "thirdweb/react"
 import { balanceOf } from "thirdweb/extensions/erc20";
 import {tokencontract} from "@/app/contract"
 import { toEther } from "thirdweb/utils";
+import { getChannel } from "@/lib/utils"
+
 
 interface DepositCardProps {
   onBalanceUpdate: () => void
@@ -23,7 +26,7 @@ export default function DepositCard({ onBalanceUpdate, kybStatus }: DepositCardP
   const [success, setSuccess] = useState<boolean>(false)
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false)
   const [requestId, setRequestId] = useState<string | null>(null)
-  const [channel, setChannel] = useState<number>(13) // Default channel
+  const [network, setNetwork] = useState<string>("MTN")
   const [initialBalance, setInitialBalance] = useState<number | null>(null)
 
   const account = useActiveAccount()
@@ -55,7 +58,7 @@ const fetchBalance = async (): Promise<number> => {
         });
 
       const data = toEther(response)
-      return data || 0
+      return Number(data) || 0
     } catch (error) {
       console.error("Error fetching balance:", error)
       return 0
@@ -88,7 +91,11 @@ const fetchBalance = async (): Promise<number> => {
       // Get initial balance
       const balance = await fetchBalance()
       setInitialBalance(balance)
+        const channel = getChannel(network, "deposit")
 
+      if (channel === 0) {
+        throw new Error("Invalid network selected")
+      }
       // Call deposit API
       const response = await fetch("https://transakt-cghs.onrender.com/depositCollateral", {
         method: "POST",
@@ -130,6 +137,12 @@ const fetchBalance = async (): Promise<number> => {
 
     setIsLoading(true)
     setError(null)
+
+       const channel = getChannel(network, "deposit")
+
+      if (channel === 0) {
+        throw new Error("Invalid network selected")
+      }
 
     try {
       const response = await fetch("https://transakt-cghs.onrender.com/executeDeposit", {
@@ -229,6 +242,24 @@ const fetchBalance = async (): Promise<number> => {
             </div>
 
             <div>
+              <label htmlFor="network" className="block text-sm font-medium text-gray-700 mb-1">
+                Mobile Network <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="network"
+                value={network}
+                onChange={(e) => setNetwork(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
+                required
+                disabled={isLoading}
+              >
+                <option value="MTN">MTN Mobile Money</option>
+                <option value="Vodafone">Vodafone Cash</option>
+                <option value="AirtelTigo">AirtelTigo Money</option>
+              </select>
+            </div>
+
+            <div>
               <label htmlFor="receiver" className="block text-sm font-medium text-gray-700 mb-1">
                 Mobile Money Number <span className="text-red-500">*</span>
               </label>
@@ -284,8 +315,8 @@ const fetchBalance = async (): Promise<number> => {
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Confirm Deposit</h3>
             <p className="text-gray-600 mb-4">
-              Please confirm your deposit of <span className="font-semibold">₵{amount}</span> from mobile number{" "}
-              <span className="font-semibold">{receiver}</span>.
+              Please confirm your deposit of <span className="font-semibold">₵{amount}</span> from your {network} mobile
+              money number <span className="font-semibold">{receiver}</span>.
             </p>
             <p className="text-sm text-gray-500 mb-6">
               You will receive a prompt on your mobile phone. Please complete the payment to continue.
