@@ -37,7 +37,8 @@ export default function Header() {
             </Link>
           </nav>
           <div className="flex gap-10 items-center">
-            {isAddress(address) &&
+
+            <div className="md:flex gap-10 items-center hidden md:visible " >{isAddress(address) &&
               <Link
               href="/dashboard"
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
@@ -45,7 +46,8 @@ export default function Header() {
              Dashboard
               </Link>
             }
-            <EmailLogin label={"Sign In"} />
+            <EmailLogin label={"Sign In"} /></div>
+            
 
             
             <button className="ml-4 md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -94,6 +96,16 @@ export default function Header() {
               >
                 FAQ
               </Link>
+
+              <div className="flex gap-10 items-center  " >{isAddress(address) &&
+              <Link
+              href="/dashboard"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
+              >
+             Dashboard
+              </Link>
+            }
+            <EmailLogin label={"Sign In"} /></div>
             </div>
           </div>
         )}
