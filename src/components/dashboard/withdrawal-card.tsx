@@ -139,7 +139,7 @@ export default function WithdrawalCard({ onBalanceUpdate, kybStatus }: Withdrawa
         // Step 2: Transfer ERC20 tokens
         setTransferStep("transferring")
         const transferResult = await TransferERC(Number.parseFloat(amount))
-        // const transferResult= "0x170382ec31cb0ebc56a640b3e3f6a267ce00690207b072dcdd33abbe993ed4bc"
+        // const transferResult= "0xe4ed1cfe21ca9275802e58561261ef0bf0414ae9191b66ebb047fa67f816c8b1"
         if (transferResult) {
           // Get the actual transaction hash from the transfer
           const txHash = typeof transferResult === "string" ? transferResult : ""

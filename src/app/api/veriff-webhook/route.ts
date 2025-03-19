@@ -20,9 +20,9 @@ export async function POST(request: Request) {
     console.log("Received Webhook Payload:", body);
 
     // Extract data safely
-    const verification = body.data?.verification ?? null; // ✅ Handles new payload structure
+    const verification = body.data?.verification ?? null; 
     const userId = body.vendorData || null; 
-    const status = verification?.decision || body.status || "unknown"; // ✅ Uses decision/status
+    const status = verification?.decision || body.status || "unknown"; 
 
     // Ensure we have enough data to process
     if (!verification) {
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
         address: userId,
         kyc_status: "approved",
         kyc_verified_at: new Date().toISOString(),
-        kyc_verification_id: body.sessionId, // ✅ New identifier in payload
+        kyc_verification_id: body.sessionId, 
         document_type: verification.document?.type?.value || "unknown",
         document_country: verification.document?.country?.value || "unknown",
         document_number: verification.document?.number?.value || "unknown",
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     } else if (status === "declined") {
       updateData = {
         kyc_status: "rejected",
-        kyc_rejection_reason: "Decision score too low" // Customize as needed
+        kyc_rejection_reason: "Decision score too low" 
       };
     }
 

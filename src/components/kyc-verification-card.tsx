@@ -175,7 +175,7 @@ import { useEffect, useRef } from "react";
 
 declare global {
   interface Window {
-    Veriff: any; // 👈 Declare Veriff on the global window object
+    Veriff: any; // Declare Veriff on the global window object
     veriffSDK: any;
   }
 }

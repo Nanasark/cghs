@@ -6,7 +6,7 @@ import { ReactNode, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Users, FileText, Settings, LogOut, Menu, X } from "lucide-react"
+import { LayoutDashboard, Users, FileText, Settings, LogOut, Menu, X, Shield } from "lucide-react"
 import AdminAuthWrapper from "@/components/admin-auth-wrapper"
 import { ThirdwebProvider } from "thirdweb/react"
 
@@ -33,6 +33,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   const navigation = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+    { name: "Reserves", href: "/admin/reserves", icon: Shield },
     { name: "KYB Applications", href: "/admin/kyb", icon: FileText },
     { name: "Users", href: "/admin/users", icon: Users },
     { name: "Settings", href: "/admin/settings", icon: Settings },
