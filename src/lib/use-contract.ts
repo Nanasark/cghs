@@ -37,7 +37,7 @@ export function useLandContract() {
       return !!transferToken.transactionHash
 
     } catch (error) {
-      console.error("Failed to approve tokens:", error)
+      console.error("Failed to transfer tokens:", error)
       return false
     }
     }
