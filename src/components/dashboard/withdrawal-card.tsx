@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import type React from "react"
@@ -159,7 +160,7 @@ export default function WithdrawalCard({ onBalanceUpdate, kybStatus }: Withdrawa
               transferTxHash: txHash,
               channel: channel,
               receiver: receiver,
-              requestId: data.requestId,
+              requestId: requestId,
             }),
           })
 
@@ -190,7 +191,7 @@ export default function WithdrawalCard({ onBalanceUpdate, kybStatus }: Withdrawa
       } else {
         throw new Error("Invalid response from server")
       }
-    } catch (error: unknown) {
+    } catch (error: any) {
       setError(error.message || "An error occurred while processing withdrawal")
       setTransferStep(null)
     } finally {

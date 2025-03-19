@@ -164,25 +164,60 @@ const fetchBalance = async (): Promise<number> => {
       }
 
       const data = await response.json()
+  
+    //   if (data.success) {
+    //     // Wait a moment for the balance to update
+    //     setTimeout(async () => {
+    //       // Check if balance increased
+    //       const newBalance = await fetchBalance()
+    //       console.log("Initial Balance:", initialBalance);
+    //       console.log("New Balance:", newBalance);
+    //       if (initialBalance !== null && newBalance > initialBalance) {
+    //         setSuccess(true)
+    //         onBalanceUpdate() // Update parent component balance
+    //       }   else {
+    //         setError("Deposit completed, but balance hasn't updated yet. It may take a few minutes.")
+    //       }
+    //       setShowConfirmModal(false)
+    //       setIsLoading(false)
+    //     }, 3000)
+    //   } else {
+    //     throw new Error("Deposit failed")
+    //   }
+    // } 
 
-      if (data.success) {
-        // Wait a moment for the balance to update
-        setTimeout(async () => {
-          // Check if balance increased
-          const newBalance = await fetchBalance()
-          if (initialBalance !== null && newBalance > initialBalance) {
-            setSuccess(true)
-            onBalanceUpdate() // Update parent component balance
-          } else {
-            setError("Deposit completed, but balance hasn't updated yet. It may take a few minutes.")
-          }
-          setShowConfirmModal(false)
-          setIsLoading(false)
-        }, 3000)
-      } else {
-        throw new Error("Deposit failed")
-      }
-    } catch (error: any) {
+    if (data.success) {
+      // Polling function to check for balance updates
+      let attempts = 0;
+      const maxAttempts = 5; // Maximum retries
+
+      const checkBalanceUpdate = async () => {
+        const newBalance = await fetchBalance();
+
+        console.log("Initial Balance:", initialBalance);
+        console.log("New Balance:", newBalance);
+
+        if (initialBalance !== null && newBalance > initialBalance) {
+          setSuccess(true);
+          onBalanceUpdate(); // Notify parent component
+          setShowConfirmModal(false);
+          setIsLoading(false);
+        } else if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(checkBalanceUpdate, 3000); // Try again after 3s
+        } else {
+          setError("Deposit completed, but balance hasn't updated yet. It may take a few minutes.");
+          setShowConfirmModal(false);
+          setIsLoading(false);
+        }
+      };
+
+      setTimeout(checkBalanceUpdate, 3000); // Start checking after 3s
+    } else {
+      throw new Error("Deposit failed");
+    }
+  } 
+    catch (error: any) {
       setError(error.message || "An error occurred while confirming deposit")
       setShowConfirmModal(false)
       setIsLoading(false)
