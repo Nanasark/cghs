@@ -175,9 +175,9 @@ const steps = ["Business Details", "Authorised Representative", "Controllers", "
       </motion.div>
 
       <div className="mt-6 text-sm text-gray-600">
-        Already have an account?{" "}
-        <Link href="/login" className="text-emerald-600 hover:text-emerald-700">
-          Log in
+        Already submitted? Update then{" "}
+        <Link href="/dashboard" className="text-emerald-600 hover:text-emerald-700">
+         Dashboard
         </Link>
       </div>
        </div>
