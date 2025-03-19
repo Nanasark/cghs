@@ -92,6 +92,7 @@ const fetchBalance = async (): Promise<number> => {
       const balance = await fetchBalance()
       setInitialBalance(balance)
         const channel = getChannel(network, "deposit")
+        console.log("balance:",balance)
 
       if (channel === 0) {
         throw new Error("Invalid network selected")
@@ -189,7 +190,7 @@ const fetchBalance = async (): Promise<number> => {
     if (data.success) {
       // Polling function to check for balance updates
       let attempts = 0;
-      const maxAttempts = 5; // Maximum retries
+      const maxAttempts = 12; // Maximum retries
 
       const checkBalanceUpdate = async () => {
         const newBalance = await fetchBalance();
@@ -204,9 +205,10 @@ const fetchBalance = async (): Promise<number> => {
           setIsLoading(false);
         } else if (attempts < maxAttempts) {
           attempts++;
-          setTimeout(checkBalanceUpdate, 3000); // Try again after 3s
+          setTimeout(checkBalanceUpdate, 5000); // Try again after 3s
         } else {
           setError("Deposit completed, but balance hasn't updated yet. It may take a few minutes.");
+          
           setShowConfirmModal(false);
           setIsLoading(false);
         }
